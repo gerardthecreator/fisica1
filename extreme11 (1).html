@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Velocidad Relativa: Avión y Viento</title>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']] // Configure MathJax to process $...$ for inline math
+      },
+      svg: {
+        fontCache: 'global' // Optimize font caching
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0F0F0F; /* Fondo principal oscuro */
+      --text-main: #E0E0E0; /* Texto principal claro */
+      --text-secondary: #B0B0B0; /* Texto secundario */
+      --heading-color-1: #60A5FA; /* Azul vibrante para h1 */
+      --heading-color-2: #A7F3D0; /* Verde menta para h2 */
+      --heading-color-3: #FCD34D; /* Amarillo suave para h3 */
+      --highlight-color: #FFD700; /* Dorado para texto fuerte */
+      --link-color: #60A5FA; /* Azul para enlaces */
+      --link-hover-color: #3B82F6; /* Azul oscuro al pasar el mouse */
+      --section-border: #2A2A2A; /* Borde sutil */
+      --equation-bg: #1A1A1A; /* Fondo para ecuaciones */
+      /* Specific colors for the animation section */
+      --canvas-bg: #1a1a2e; /* Fondo del lienzo */
+      --canvas-border-color: #00b3e6; /* Borde del lienzo */
+      --animation-button-bg: #00b3e6; /* Fondo botón de animación */
+      --animation-button-hover-bg: #008fcc; /* Fondo botón de animación al pasar mouse */
+      --animation-button-text: #121223; /* Color texto botón de animación */
+      /* Vector colors in p5.js */
+      --vector-wind-color: #30a6f0; /* Azul claro */
+      --vector-plane-color: #f05454; /* Rojo */
+      --vector-ground-color: #4ecdc4; /* Verde azulado */
+    }
+
+    body {
+      font-family: 'Anton', sans-serif;
+      font-weight: 400;
+      font-size: 1rem;
+      line-height: 1.8;
+      letter-spacing: 0.03em;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      user-select: none;
+    }
+    .container {
+      max-width: 100%;
+      padding: 1.5rem;
+      margin: 0 auto;
+    }
+    h1, h2, h3 {
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      line-height: 1.2;
+      margin-bottom: 0.75rem;
+    }
+    h1 {
+      font-size: 3rem;
+      color: var(--heading-color-1);
+      text-align: center;
+      margin-bottom: 2rem;
+      text-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
+    }
+    h2 {
+      font-size: 2.4rem;
+      color: var(--heading-color-2);
+      margin-top: 3rem;
+      border-bottom: 1px solid var(--section-border);
+      padding-bottom: 0.5rem;
+    }
+    h3 {
+      font-size: 1.8rem;
+      color: var(--heading-color-3);
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+    }
+    p {
+      color: var(--text-main);
+      margin-bottom: 1rem;
+    }
+    strong {
+      color: var(--highlight-color);
+    }
+    a {
+      color: var(--link-color);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+    a:hover {
+      color: var(--link-hover-color);
+      text-decoration: underline;
+    }
+    section {
+      background-color: var(--bg-primary);
+      border: 1px solid var(--section-border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+    .equation {
+      background-color: var(--equation-bg);
+      color: var(--text-main);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      text-align: center;
+      margin: 1.5rem 0;
+      border: 1px solid var(--section-border);
+      overflow-x: auto;
+      white-space: nowrap;
+      max-width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+    .mjx-chtml {
+      color: var(--text-main) !important;
+      font-size: 1.15rem !important;
+    }
+    /* Styles for explanation buttons */
+    .step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap; /* Allow wrapping on small screens */
+    }
+
+    .step-header h3 {
+      margin-bottom: 0; /* Remove default margin */
+      flex-grow: 1; /* Allow h3 to take available space */
+    }
+
+    .explanation-btn {
+      background-color: #4A5568; /* Slightly darker gray for clarity */
+      color: #E0E0E0;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.3s ease;
+      margin-left: 1rem; /* Space from the h3 */
+      flex-shrink: 0; /* Prevent button from shrinking */
+    }
+
+    .explanation-btn:hover {
+      background-color: #2D3748; /* Even darker gray on hover */
+    }
+
+    .explanation-content {
+      background-color: #1A202C; /* Darker background for explanation */
+      color: #B0B0B0;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-top: 1rem;
+      border: 1px solid var(--section-border);
+      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+      display: none; /* Hidden by default */
+    }
+
+    /* Styles for canvas container and animation button */
+    #canvas-container {
+      width: 100%;
+      max-width: 600px; /* Limits size on large screens */
+      aspect-ratio: 1 / 1; /* Ensures a square aspect ratio */
+      border: 3px solid var(--canvas-border-color);
+      border-radius: 10px;
+      background-color: var(--canvas-bg);
+      box-sizing: border-box; /* Include padding/border in element's total width and height */
+      position: relative;
+      display: flex; /* To center the p5.js canvas visually */
+      justify-content: center;
+      align-items: center;
+      margin: 1.5rem auto; /* Center container horizontally and add vertical margin */
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); /* Matching general section shadow */
+      overflow: hidden; /* Ensure nothing visually escapes the container */
+    }
+    /* The p5.js-generated canvas will replace/be injected into the div,
+       or it will be its child if the canvas tag is present.
+       These styles apply to the actual p5.js canvas element. */
+    canvas {
+      display: block; /* Remove extra space below canvas */
+      border-radius: 8px; /* Inner radius for canvas visual */
+      background-color: var(--canvas-bg); /* Ensure canvas background matches container */
+    }
+
+    #reset-btn { /* Specific style for the animation reset button */
+      margin-top: 20px;
+      background-color: var(--animation-button-bg);
+      color: var(--animation-button-text);
+      border: none;
+      border-radius: 30px;
+      padding: 14px 50px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(0, 116, 184, 0.67);
+      transition: background-color 0.3s ease, transform 0.3s ease; /* Add transform transition */
+    }
+    #reset-btn:hover {
+      background-color: var(--animation-button-hover-bg);
+      transform: translateY(-2px); /* Slight lift on hover */
+    }
+    #reset-btn:active {
+      transform: translateY(0); /* Press effect */
+      box-shadow: 0 2px 5px rgba(0, 116, 184, 0.4);
+    }
+
+    /* Media queries for responsiveness */
+    @media (max-width: 640px) {
+      body {
+        font-size: 0.95rem;
+        line-height: 1.7;
+      }
+      .container {
+        padding: 1rem;
+      }
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+      }
+      h2 {
+        font-size: 2rem;
+        margin-top: 2rem;
+      }
+      h3 {
+        font-size: 1.6rem;
+        margin-top: 1.5rem;
+      }
+      section {
+        padding: 1.2rem;
+        margin-bottom: 1.2rem;
+      }
+      .equation {
+        padding: 0.8rem;
+        margin: 1.2rem 0;
+      }
+      .step-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .step-header h3 {
+        margin-bottom: 0.5rem;
+      }
+      .explanation-btn {
+        margin-left: 0;
+        width: 100%;
+      }
+      #reset-btn {
+        padding: 12px 30px;
+        font-size: 1rem;
+      }
+      #canvas-container {
+        margin: 1rem auto; /* Adjust margin for small screens */
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container mx-auto">
+
+    <section>
+      <h1>Velocidad Relativa: Avión y Viento</h1>
+      <nav>
+        <h2>Índice</h2>
+        <ul class="list-disc pl-6">
+          <li><a href="#intro">Introducción</a></li>
+          <li><a href="#solution">Solución Paso a Paso</a></li>
+          <li><a href="#animation-section">Simulación Interactiva</a></li>
+          <li><a href="#conclusion">Conclusión</a></li>
+        </ul>
+      </nav>
+    </section>
+
+    <section id="intro">
+      <h2>¿De qué trata este problema?</h2>
+      <p>
+        Un avión vuela a la velocidad de <strong>$250 \, \text{km/h}$</strong> respecto al aire en reposo. Un viento sopla a <strong>$80 \, \text{km/h}$</strong> en dirección noreste (es decir, en dirección <strong>$60^\circ$ al este del norte</strong>). Queremos responder a dos preguntas:
+      </p>
+      <p>
+        (a) ¿En qué dirección debe volar el avión para que su rumbo sea norte?
+      </p>
+      <p>
+        (b) ¿Cuál es la velocidad del avión respecto al suelo?
+      </p>
+    </section>
+
+    <section id="solution">
+      <h2>Solución Paso a Paso</h2>
+
+      <div>
+        <div class="step-header">
+          <h3 id="step1-title">Paso 1: Definir los vectores de velocidad</h3>
+          <button class="explanation-btn" data-target="explanation1">¿Por qué este paso?</button>
+        </div>
+        <div id="explanation1" class="explanation-content">
+          <h4>Razón y Orden:</h4>
+          <p>
+            En problemas de velocidad relativa, es crucial definir claramente los vectores y sus relaciones. Esto nos permite establecer una ecuación vectorial fundamental que describe el movimiento. Utilizar notación de subíndices (e.g., $\vec{v}_{PG}$) ayuda a entender qué velocidad es relativa a qué marco de referencia. Este paso es la base para traducir el problema físico a un modelo matemático.
+          </p>
+        </div>
+        <p>
+          Definimos los siguientes vectores de velocidad:
+        </p>
+        <ul class="list-disc pl-6">
+          <li>$\vec{v}_{PG}$: Velocidad del avión respecto al suelo (<strong>P</strong>lane-<strong>G</strong>round).</li>
+          <li>$\vec{v}_{PA}$: Velocidad del avión respecto al aire (<strong>P</strong>lane-<strong>A</strong>ir). Es la velocidad propia del avión.</li>
+          <li>$\vec{v}_{AG}$: Velocidad del aire respecto al suelo (<strong>A</strong>ir-<strong>G</strong>round). Es la velocidad del viento.</li>
+        </ul>
+        <p>
+          La relación entre estas velocidades es la ecuación fundamental de la velocidad relativa:
+        </p>
+        <div class="equation">
+          \[
+          \vec{v}_{PG} = \vec{v}_{PA} + \vec{v}_{AG}
+          \]
+        </div>
+        <p>
+          Valores conocidos:
+          <br>
+          $|\vec{v}_{PA}| = 250 \, \text{km/h}$
+          <br>
+          $|\vec{v}_{AG}| = 80 \, \text{km/h}$ en dirección noreste ($60^\circ$ al este del norte).
+        </p>
+      </div>
+
+      <div>
+        <div class="step-header">
+          <h3 id="step2-title">Paso 2: Descomponer los vectores en componentes</h3>
+          <button class="explanation-btn" data-target="explanation2">¿Por qué este paso?</button>
+        </div>
+        <div id="explanation2" class="explanation-content">
+          <h4>Razón y Orden:</h4>
+          <p>
+            Trabajar con vectores en sus componentes rectangulares ($x$ e $y$) simplifica enormemente las sumas vectoriales. Permite convertir una ecuación vectorial en un sistema de dos ecuaciones escalares independientes (una para cada componente), lo que facilita la resolución algebraica. Para el viento, es importante interpretar correctamente la dirección "$60^\circ$ al este del norte". Si el norte es el eje $Y$ positivo, $60^\circ$ al este del norte significa un ángulo de $90^\circ - 60^\circ = 30^\circ$ con respecto al eje $X$ positivo.
+          </p>
+        </div>
+        <p>
+          Asumiremos que el eje $X$ positivo es el Este y el eje $Y$ positivo es el Norte.
+        </p>
+        <p>
+          <strong>Vector de Velocidad del Viento ($\vec{v}_{AG}$):</strong>
+          <br>
+          El viento sopla a $80 \, \text{km/h}$ en dirección $60^\circ$ al este del norte. Esto significa un ángulo de $90^\circ - 60^\circ = 30^\circ$ con respecto al eje $X$ positivo.
+        </p>
+        <div class="equation">
+          \[
+          \vec{v}_{AG} = (80 \cos 30^\circ) \hat{i} + (80 \sin 30^\circ) \hat{j}
+          \]
+          \[
+          \vec{v}_{AG} \approx (80 \cdot 0.866) \hat{i} + (80 \cdot 0.5) \hat{j}
+          \]
+          \[
+          \vec{v}_{AG} \approx 69.28 \, \hat{i} + 40 \, \hat{j} \, \text{km/h}
+          \]
+        </div>
+        <p>
+          <strong>Vector de Velocidad del Avión respecto al Aire ($\vec{v}_{PA}$):</strong>
+          <br>
+          La dirección es desconocida, sea $\theta_{PA}$ el ángulo que forma con el eje $X$ positivo.
+        </p>
+        <div class="equation">
+          \[
+          \vec{v}_{PA} = (250 \cos \theta_{PA}) \hat{i} + (250 \sin \theta_{PA}) \hat{j}
+          \]
+        </div>
+        <p>
+          <strong>Vector de Velocidad del Avión respecto al Suelo ($\vec{v}_{PG}$):</strong>
+          <br>
+          El avión debe tener un rumbo norte, lo que significa que su componente $X$ debe ser cero.
+        </p>
+        <div class="equation">
+          \[
+          \vec{v}_{PG} = (0) \hat{i} + (v_{PG}) \hat{j}
+          \]
+        </div>
+      </div>
+
+      <div>
+        <div class="step-header">
+          <h3 id="step3-title">Paso 3: Resolver para la dirección (parte a)</h3>
+          <button class="explanation-btn" data-target="explanation3">¿Por qué este paso?</button>
+        </div>
+        <div id="explanation3" class="explanation-content">
+          <h4>Razón y Orden:</h4>
+          <p>
+            Para que el avión tenga un rumbo puramente norte, la suma de las componentes horizontales ($x$) de la velocidad del avión respecto al aire y la velocidad del viento debe ser cero. Al igualar la componente $x$ de la ecuación vectorial a cero, podemos despejar el ángulo $\theta_{PA}$ al que debe volar el avión. Este es el primer requisito del problema.
+          </p>
+        </div>
+        <p>
+          Usando la ecuación $\vec{v}_{PG} = \vec{v}_{PA} + \vec{v}_{AG}$ y observando las componentes '$x$':
+        </p>
+        <div class="equation">
+          \[
+          v_{PG,x} = v_{PA,x} + v_{AG,x}
+          \]
+          \[
+          0 = (250 \cos \theta_{PA}) + 69.28
+          \]
+          \[
+          250 \cos \theta_{PA} = -69.28
+          \]
+          \[
+          \cos \theta_{PA} = -\frac{69.28}{250} \approx -0.2771
+          \]
+        </div>
+        <p>
+          Para encontrar $\theta_{PA}$:
+        </p>
+        <div class="equation">
+          \[
+          \theta_{PA} = \arccos(-0.2771) \approx 106.08^\circ
+          \]
+        </div>
+        <p>
+          Un ángulo de $106.08^\circ$ significa que el avión debe volar aproximadamente $106.08^\circ$ desde el Este en sentido antihorario. Esto es $16.08^\circ$ al oeste del Norte ($90^\circ + 16.08^\circ = 106.08^\circ$).
+          Es decir, debe volar <strong>$16.08^\circ$ al oeste del norte</strong>.
+        </p>
+      </div>
+
+      <div>
+        <div class="step-header">
+          <h3 id="step4-title">Paso 4: Resolver para la velocidad respecto al suelo (parte b)</h3>
+          <button class="explanation-btn" data-target="explanation4">¿Por qué este paso?</button>
+        </div>
+        <div id="explanation4" class="explanation-content">
+          <h4>Razón y Orden:</h4>
+          <p>
+            Una vez que conocemos la dirección en la que el avión debe volar ($\theta_{PA}$), podemos usar las componentes verticales ($y$) de la ecuación vectorial para encontrar la magnitud de la velocidad resultante del avión respecto al suelo. Esta es la segunda parte del problema.
+          </p>
+        </div>
+        <p>
+          Usando la ecuación $\vec{v}_{PG} = \vec{v}_{PA} + \vec{v}_{AG}$ y observando las componentes '$y$':
+        </p>
+        <div class="equation">
+          \[
+          v_{PG,y} = v_{PA,y} + v_{AG,y}
+          \]
+          \[
+          v_{PG} = (250 \sin \theta_{PA}) + 40
+          \]
+        </div>
+        <p>
+          Sustituyendo $\theta_{PA} \approx 106.08^\circ$:
+        </p>
+        <div class="equation">
+          \[
+          v_{PG} = (250 \cdot 0.9608) + 40
+          \]
+          \[
+          v_{PG} \approx (250 \cdot 0.9608) + 40
+          \]
+          \[
+          v_{PG} \approx 240.2 + 40
+          \]
+          \[
+          v_{PG} \approx 280.2 \, \text{km/h}
+          \]
+        </div>
+        <p>
+          La velocidad del avión respecto al suelo es de aproximadamente <strong>$280.2 \, \text{km/h}$</strong>.
+        </p>
+      </div>
+    </section>
+
+    <section id="animation-section">
+        <h2>Simulación Interactiva de Vectores</h2>
+        <p>Observa cómo el avión ajusta su rumbo para contrarrestar el viento y mantener una trayectoria hacia el norte. La animación se reproduce automáticamente y puedes reiniciarla en cualquier momento.</p>
+        <div id="canvas-container" aria-label="Visualización animada de vectores de avión, viento y velocidad respecto al suelo" role="img">
+          </div>
+        <div class="flex justify-center">
+          <button id="reset-btn" aria-label="Reiniciar animación">Reiniciar Simulación</button>
+        </div>
+    </section>
+
+    <section id="conclusion">
+      <h2>Conclusión</h2>
+      <p>
+        (a) Para que el avión tenga un rumbo puramente norte, debe volar en una dirección de aproximadamente <strong>$16.08^\circ$ al oeste del norte</strong> (o $106.08^\circ$ desde el Este en sentido antihorario).
+      </p>
+      <p>
+        (b) La velocidad del avión respecto al suelo con este rumbo es de aproximadamente <strong>$280.2 \, \text{km/h}$</strong>.
+      </p>
+    </section>
+  </div>
+  <script>
+    // JavaScript para la animación de p5.js
+    let V_plane_air_speed = 250; // Magnitud velocidad avión-aire
+    let V_wind_speed = 80;  // Magnitud velocidad aire-tierra (viento)
+    let wind_angle_deg = 30; // Ángulo del viento respecto al eje X positivo (Este) - 60° al este del norte = 30° desde +X
+
+    let calculated_plane_angle_rad; // Ángulo de la velocidad avión-aire que debemos encontrar (dirección a volar)
+    let calculated_ground_speed; // Magnitud de la velocidad avión-tierra calculada
+
+    let v_wind_x_initial, v_wind_y_initial; // Initial components of the wind vector
+
+    // Variables para la visualización y animación
+    let scaleFactor; // Factor de escala de km/h a píxeles
+    let originX, originY; // Origen del sistema de coordenadas en el canvas
+
+    let animationPhase = 0; // 0: inicio, 1: viento, 2: ajuste avión, 3: resultante, 4: estable
+    let phaseDuration = 2; // Duración de cada fase en seconds
+    let timer = 0; // Temporizador para controlar las fases de la animación
+
+    const angleStartAnimationDeg = 90; // Starting angle for plane animation (pointing North)
+
+    // Function setup of p5.js: Called once at the beginning
+    function setup() {
+      const container = document.getElementById('canvas-container');
+      // Create a canvas with the container's current dimensions
+      const p5Canvas = createCanvas(container.clientWidth, container.clientHeight);
+      p5Canvas.parent('canvas-container'); // Attach the canvas to the div
+
+      // Ensure consistent angle units
+      const wind_angle_rad = radians(wind_angle_deg);
+
+      // Calculate initial vector components for wind (fixed)
+      v_wind_x_initial = V_wind_speed * cos(wind_angle_rad);
+      v_wind_y_initial = V_wind_speed * sin(wind_angle_rad);
+
+      // Calculate the required plane heading (Part 'a' of the problem)
+      // v_plane_x + v_wind_x = 0  => v_plane_x = -v_wind_x
+      // V_plane_air_speed * cos(calculated_plane_angle_rad) = -v_wind_x
+      calculated_plane_angle_rad = acos(-v_wind_x_initial / V_plane_air_speed);
+
+      // Calculate the resulting ground speed (Part 'b' of the problem)
+      const temp_v_plane_y_at_calculated_angle = V_plane_air_speed * sin(calculated_plane_angle_rad);
+      const temp_v_ground_y = temp_v_plane_y_at_calculated_angle + v_wind_y_initial;
+      calculated_ground_speed = temp_v_ground_y; // Since v_ground_x is ~0 for a northward path
+
+      // Initial calculation for scale factor and origin
+      recalculateCanvasMetrics();
+
+      // Event listener for the reset button
+      document.getElementById('reset-btn').addEventListener('click', resetAnimation);
+
+      // Handle window resizing to maintain responsiveness
+      window.addEventListener('resize', () => {
+        const container = document.getElementById('canvas-container');
+        // Resize p5.js canvas to match container's new dimensions
+        resizeCanvas(container.clientWidth, container.clientHeight);
+        recalculateCanvasMetrics(); // Recalculate scales and origins
+      });
+
+      resetAnimation(); // Start the animation on load
+    }
+
+    // Helper function to recalculate scaling and origin
+    function recalculateCanvasMetrics() {
+        // 1. Unscaled vector components at the final, calculated state (for maximum reach)
+        const v_wind_x_unscaled = V_wind_speed * cos(radians(wind_angle_deg));
+        const v_wind_y_unscaled = V_wind_speed * sin(radians(wind_angle_deg));
+
+        const v_plane_x_unscaled_final = V_plane_air_speed * cos(calculated_plane_angle_rad);
+        const v_plane_y_unscaled_final = V_plane_air_speed * sin(calculated_plane_angle_rad);
+
+        const v_ground_x_unscaled_final = v_plane_x_unscaled_final + v_wind_x_unscaled;
+        const v_ground_y_unscaled_final = v_plane_y_unscaled_final + v_wind_y_unscaled;
+
+        // 2. Find the maximum absolute coordinate reach from the origin for all vectors
+        // Consider the endpoints of all vectors that are drawn from the origin
+        let maxUnscaledX = 0;
+        let maxUnscaledY = 0;
+
+        maxUnscaledX = max(maxUnscaledX, abs(v_wind_x_unscaled));
+        maxUnscaledY = max(maxUnscaledY, abs(v_wind_y_unscaled));
+
+        maxUnscaledX = max(maxUnscaledX, abs(v_plane_x_unscaled_final));
+        maxUnscaledY = max(maxUnscaledY, abs(v_plane_y_unscaled_final));
+
+        maxUnscaledX = max(maxUnscaledX, abs(v_ground_x_unscaled_final));
+        maxUnscaledY = max(maxUnscaledY, abs(v_ground_y_unscaled_final));
+
+        // For the triangle summation (wind + plane_adjusted), the 'plane_adjusted' vector starts
+        // at the tip of the wind vector. So its end point relative to origin is (wind_tip + plane_vector)
+        maxUnscaledX = max(maxUnscaledX, abs(v_wind_x_unscaled + v_plane_x_unscaled_final));
+        maxUnscaledY = max(maxUnscaledY, abs(v_wind_y_unscaled + v_plane_y_unscaled_final));
+
+        // Add a minimum effective reach to avoid division by zero or overly large scale factors
+        const minEffectiveReach = 1; // In km/h terms, a very small magnitude
+        maxUnscaledX = max(maxUnscaledX, minEffectiveReach);
+        maxUnscaledY = max(maxUnscaledY, minEffectiveReach);
+
+        // 3. Determine scale factor based on the canvas dimensions and max reach
+        // **Aggressive Change**: Increase desiredCanvasCoverage to fill more of the canvas.
+        const targetCanvasDimension = min(width, height);
+        const desiredCanvasCoverage = 0.95; // Increased from 0.8 to 0.95 for maximum space utilization
+
+        let scaleX_from_reach = (targetCanvasDimension * desiredCanvasCoverage / 2) / maxUnscaledX;
+        let scaleY_from_reach = (targetCanvasDimension * desiredCanvasCoverage / 2) / maxUnscaledY;
+
+        scaleFactor = min(scaleX_from_reach, scaleY_from_reach);
+
+        // **Aggressive Change**: Tighten min/max allowed scale factors.
+        // Allowing scaleFactor to be smaller (lower minAllowedScale) makes vectors smaller.
+        // Lowering maxAllowedScale (which caps the visual size) allows small magnitudes to be represented smaller.
+        const minAllowedScale = 0.4; // Can go slightly lower if vectors are still too big (e.g., 0.3)
+        const maxAllowedScale = 1;   // Reduced from 3 to 2, allowing vectors to be generally smaller
+
+        scaleFactor = constrain(scaleFactor, minAllowedScale, maxAllowedScale);
+
+        originX = width / 2; // Center of the canvas
+        originY = height / 1.2;
+    }
+
+
+    // Function draw of p5.js: Executes continuously
+    function draw() {
+      background(var_to_p5_color('--canvas-bg')); // Dark background
+
+      // Transform coordinate system: Origin to center, +Y pointing up (North)
+      push();
+      translate(originX, originY);
+      scale(1, -1);
+
+      // Draw simple cardinal axes
+      stroke(50);
+      strokeWeight(1);
+      line(-width/2, 0, width/2, 0); // X-axis
+      line(0, -height/2, 0, height/2); // Y-axis
+      fill(200);
+      push();
+      scale(1, -1); // Invert again for readable text
+      textSize(10); // **Aggressive Change**: Smaller axis labels
+      textAlign(RIGHT, CENTER);
+      text('Este', width/2 - 5, -5); // Removed (+X)
+      textAlign(CENTER, TOP);
+      text('Norte', 5, -height/2 + 15); // Removed (+Y), adjusted position
+      pop();
+
+      // --- Vector Animation ---
+      let current_plane_angle_rad;
+      let alpha_wind = 0, alpha_plane = 0, alpha_resultant = 0; // Transparencies for fade-in/out
+
+      if (timer < phaseDuration) { // Phase 1: Wind vector appears
+        alpha_wind = map(timer, 0, phaseDuration, 0, 255);
+        current_plane_angle_rad = radians(angleStartAnimationDeg); // Plane initially pointing North
+      } else if (timer < phaseDuration * 2) { // Phase 2: Plane adjusts its heading
+        alpha_wind = 255;
+        alpha_plane = map(timer, phaseDuration, phaseDuration * 2, 0, 255);
+        let t_phase = (timer - phaseDuration) / phaseDuration;
+        current_plane_angle_rad = lerp(radians(angleStartAnimationDeg), calculated_plane_angle_rad, t_phase);
+      } else if (timer < phaseDuration * 3) { // Phase 3: Resultant vector appears (summation)
+        alpha_wind = 255;
+        alpha_plane = 255;
+        alpha_resultant = map(timer, phaseDuration * 2, phaseDuration * 3, 0, 255);
+        current_plane_angle_rad = calculated_plane_angle_rad; // Maintain final angle
+      } else { // Phase 4: All vectors static, visible
+        alpha_wind = 255;
+        alpha_plane = 255;
+        alpha_resultant = 255;
+        current_plane_angle_rad = calculated_plane_angle_rad;
+      }
+
+      // Calculate animated components of plane-air velocity
+      const v_plane_x_current = V_plane_air_speed * cos(current_plane_angle_rad);
+      const v_plane_y_current = V_plane_air_speed * sin(current_plane_angle_rad);
+
+      // Calculate components of the animated resultant ground velocity
+      const v_ground_x_current = v_plane_x_current + v_wind_x_initial;
+      const v_ground_y_current = v_plane_y_current + v_wind_y_initial;
+
+      // Draw Wind Vector (constant)
+      drawArrow(0, 0, v_wind_x_initial * scaleFactor, v_wind_y_initial * scaleFactor, var_to_p5_color('--vector-wind-color'), "Viento", 0.5);
+
+      // Draw Plane-Air Vector with airplane emoji
+      drawArrow(0, 0, v_plane_x_current * scaleFactor, v_plane_y_current * scaleFactor, var_to_p5_color('--vector-plane-color'), "Avión ✈️", 0.5); /* Added emoji */
+
+      // Draw Resultant Ground Vector and the vector triangle
+      if (alpha_resultant > 0) {
+        // Draw the plane vector originating from the wind vector's tip (for visual sum)
+        drawArrow(v_wind_x_initial * scaleFactor, v_wind_y_initial * scaleFactor, v_plane_x_current * scaleFactor, v_plane_y_current * scaleFactor, color(var_to_p5_color('--vector-plane-color'), alpha_resultant * 0.7), null, 0.5, true); // Null label to avoid double label
+
+        // Draw the final resultant vector from origin to final point
+        drawArrow(0, 0, v_ground_x_current * scaleFactor, v_ground_y_current * scaleFactor, var_to_p5_color('--vector-ground-color'), "Avión/Suelo", 0.7);
+      }
+
+      pop(); // Restore coordinate system before drawing overlay text (UI text)
+
+      // Display numerical values (outside of translated/scaled system)
+      fill(665);
+      textSize(10); // **Aggressive Change**: Reduced from 12 to 10 for more compactness
+      textAlign(LEFT, TOP);
+      const textX = 5; // Reduced from 10 to 5
+      let textY = 5; // Reduced from 10 to 5
+      const lineSpacing = 16; // **Aggressive Change**: Reduced from 20 to 16 for tighter lines
+
+      text(`|V_PA|: ${V_plane_air_speed.toFixed(0)} km/h`, textX, textY);
+      textY += lineSpacing;
+      text(`Ángulo V_PA: ${degrees(calculated_plane_angle_rad).toFixed(2)}°`, textX, textY); // Removed (calc)
+      textY += lineSpacing;
+      text(`|V_AG|: ${V_wind_speed.toFixed(0)} km/h`, textX, textY);
+      textY += lineSpacing;
+      text(`Ángulo V_AG: ${wind_angle_deg.toFixed(0)}°`, textX, textY);
+      textY += lineSpacing;
+      text(`|V_PG|: ${calculated_ground_speed.toFixed(2)} km/h`, textX, textY); // Removed (Norte)
+
+      // Increment animation timer
+      timer += deltaTime / 1000;
+      if (timer > phaseDuration * 3.5) { // A bit extra time for the last static phase
+        timer = 0; // Loop animation automatically
+      }
+    }
+
+    // Auxiliary function to draw arrows (vectors)
+    function drawArrow(x1, y1, x2, y2, c, label, headSizeFactor = 1, fromTail = false) {
+      push();
+      stroke(c);
+      strokeWeight(2); // **Aggressive Change**: Reduced from 3 to 2 for thinner lines
+      fill(c);
+
+      let dx = x2 - x1;
+      let dy = y2 - y1;
+      if (fromTail) {
+          dx = x2; // x2, y2 are the components, not the end point
+          dy = y2;
+      }
+      let angle = atan2(dy, dx);
+      let arrowSize = 3 * headSizeFactor; // **Aggressive Change**: Reduced from 10 to 8 for smaller arrowheads
+
+      line(x1, y1, x1 + dx, y1 + dy);
+
+      // Draw arrow head
+      translate(x1 + dx, y1 + dy);
+      rotate(angle);
+      triangle(0, arrowSize / 1, 0, -arrowSize / 1, arrowSize, 0);
+
+      // Label text (if provided)
+      if (label) {
+        push();
+        scale(1, -1); // Invert again for readable text
+        textSize(10); // **Aggressive Change**: Reduced from 12 to 10 for smaller labels
+        textAlign(CENTER, BOTTOM);
+
+        const paddingX = 20; // **Aggressive Change**: Reduced from 6 to 4
+        const paddingY = 30; // **Aggressive Change**: Reduced from 3 to 2
+        const tempFont = drawingContext.font;
+        drawingContext.font = 'bold 10px "Segoe UI", Tahoma, Geneva, Verdana, sans-serif'; // Font size for measurement
+        const metrics = drawingContext.measureText(label);
+        drawingContext.font = tempFont;
+
+        const wRect = metrics.width + paddingX * 1;
+        const hRect = 1; // **Aggressive Change**: Reduced from 18 to 16
+        // Adjusted Y offset for the label background and text itself
+        const labelYOffset = 0.2; // **Aggressive Change**: Reduced from 8/10 to 6/8
+        
+        fill('rgba(0, 0, 0, 0.6)');
+        rect(-wRect / 2, -hRect - labelYOffset, wRect, hRect);
+
+        fill(c);
+        text(label, 0, -labelYOffset - 2); // Text position relative to rect and arrow
+        pop();
+      }
+      pop();
+    }
+
+    // Animation reset function
+    function resetAnimation() {
+      timer = 0;
+      animationPhase = 0;
+    }
+
+    // Function to convert CSS variables to p5.js color format
+    function var_to_p5_color(cssVarName) {
+      const rootStyle = getComputedStyle(document.documentElement);
+      const cssColor = rootStyle.getPropertyValue(cssVarName).trim();
+      return color(cssColor);
+    }
+
+    // JavaScript for explanation buttons (remains the same)
+    document.addEventListener('DOMContentLoaded', () => {
+      const explanationButtons = document.querySelectorAll('.explanation-btn');
+
+      explanationButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const targetId = button.dataset.target;
+          const explanationContent = document.getElementById(targetId);
+
+          if (explanationContent.style.display === 'block') {
+            explanationContent.style.display = 'none';
+            button.textContent = '¿Por qué este paso?';
+          } else {
+            // Close all other explanations first
+            document.querySelectorAll('.explanation-content').forEach(content => {
+              if (content !== explanationContent) {
+                content.style.display = 'none';
+              }
+            });
+            document.querySelectorAll('.explanation-btn').forEach(btn => {
+                if (btn !== button) {
+                    btn.textContent = '¿Por qué este paso?';
+                }
+            });
+
+            explanationContent.style.display = 'block';
+            button.textContent = 'Ocultar explicación';
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
